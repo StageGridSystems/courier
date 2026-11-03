@@ -1,6 +1,8 @@
-"""Gmail-style recipient chip input field."""
+"""Gmail-style recipient chip input with wrapping flow layout."""
 
 from __future__ import annotations
+
+import re
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QKeyEvent
@@ -9,7 +11,6 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -17,6 +18,7 @@ from PySide6.QtWidgets import (
 
 from courier.audience.extract import normalize_email, validate_email
 from courier.branding import COLORS
+from courier.ui.widgets.flow_layout import FlowLayout
 
 
 class Chip(QFrame):
@@ -26,10 +28,9 @@ class Chip(QFrame):
         super().__init__(parent)
         self.email = email
         self.valid = valid
-        self.setObjectName("chipValid" if valid else "chipInvalid")
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(8, 2, 4, 2)
-        layout.setSpacing(4)
+        layout.setContentsMargins(10, 4, 6, 4)
+        layout.setSpacing(6)
         self.label = QLabel(email)
         self.label.setStyleSheet("border: none; background: transparent;")
         remove = QLabel("×")
@@ -41,51 +42,64 @@ class Chip(QFrame):
         bg = "rgba(13, 148, 136, 0.25)" if valid else "rgba(220, 38, 38, 0.25)"
         border = COLORS["primary"] if valid else COLORS["danger"]
         self.setStyleSheet(
-            f"QFrame {{ background: {bg}; border: 1px solid {border}; border-radius: 12px; }}"
+            f"QFrame {{ background: {bg}; border: 1px solid {border}; border-radius: 14px; }}"
         )
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.adjustSize()
+
+    def sizeHint(self):  # type: ignore[override]
+        return self.layout().sizeHint() if self.layout() else super().sizeHint()
+
+    def minimumSizeHint(self):  # type: ignore[override]
+        return self.sizeHint()
 
     def _on_remove(self, _event: object) -> None:
         self.removed.emit(self.email)
 
 
-class ChipField(QWidget):
+class ChipField(QFrame):
     """Type emails; Enter/comma/semicolon/space commits; backspace removes last chip."""
 
     changed = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        *,
+        min_height: int = 72,
+        max_height: int = 220,
+    ) -> None:
         super().__init__(parent)
+        self.setObjectName("chipField")
         self._emails: list[str] = []
         self._invalid: list[str] = []
+        self._chips: list[Chip] = []
+        self._min_height = min_height
+        self._max_height = max_height
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setMinimumHeight(48)
-        scroll.setMaximumHeight(120)
+        outer.setContentsMargins(8, 8, 8, 8)
+        outer.setSpacing(0)
 
         self.container = QWidget()
-        self.flow = QHBoxLayout(self.container)
-        self.flow.setContentsMargins(6, 6, 6, 6)
-        self.flow.setSpacing(6)
-        self.flow.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self.flow = FlowLayout(self.container, margin=0, spacing=6)
+        self.container.setLayout(self.flow)
 
         self.input = QLineEdit()
         self.input.setPlaceholderText("Type an email, then Enter")
         self.input.setFrame(False)
+        self.input.setMinimumWidth(180)
         self.input.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.input.setStyleSheet("QLineEdit { background: transparent; border: none; padding: 4px; }")
         self.input.returnPressed.connect(self._commit_input)
         self.input.textChanged.connect(self._on_text_changed)
         self.input.installEventFilter(self)
         self.flow.addWidget(self.input)
-        self.flow.addStretch(1)
 
-        scroll.setWidget(self.container)
-        outer.addWidget(scroll)
-        self._chips: list[Chip] = []
+        outer.addWidget(self.container)
+        self.setMinimumHeight(min_height)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        self.setAcceptDrops(False)
 
     def eventFilter(self, obj: object, event: object) -> bool:
         if obj is self.input and isinstance(event, QKeyEvent):
@@ -116,8 +130,6 @@ class ChipField(QWidget):
         self.add_emails([raw])
 
     def add_emails(self, emails: list[str]) -> None:
-        import re
-
         existing = {normalize_email(e) for e in self._emails}
         for raw in emails:
             candidate = raw.strip()
@@ -168,23 +180,52 @@ class ChipField(QWidget):
         self._rebuild()
         self.changed.emit()
 
-    def _rebuild(self) -> None:
+    def _clear_flow(self) -> None:
         while self.flow.count():
             item = self.flow.takeAt(0)
+            if item is None:
+                break
             w = item.widget()
-            if w and w is not self.input:
+            if w is not None and w is not self.input:
                 w.deleteLater()
+
+    def _rebuild(self) -> None:
+        self._clear_flow()
         self._chips.clear()
         for email in self._emails:
             chip = Chip(email, valid=True)
             chip.removed.connect(self._remove_email)
-            self.flow.insertWidget(self.flow.count(), chip)
+            self.flow.addWidget(chip)
             self._chips.append(chip)
         for email in self._invalid:
             chip = Chip(email, valid=False)
             chip.removed.connect(self._remove_email)
-            self.flow.insertWidget(self.flow.count(), chip)
+            self.flow.addWidget(chip)
             self._chips.append(chip)
         self.flow.addWidget(self.input)
-        self.flow.addStretch(1)
+        self.flow.invalidate()
+        self.container.setMinimumWidth(0)
+        self.container.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
+        )
+        self._relayout()
         self.input.setFocus()
+
+    def _relayout(self) -> None:
+        """Apply flow geometry using the field width (never shrink-wrap)."""
+        target = self.contentsRect()
+        width = max(target.width(), 200)
+        if self.container.width() != width:
+            self.container.resize(width, self.container.height())
+        needed = self.flow.heightForWidth(width) + 16
+        height = max(self._min_height, min(self._max_height, needed))
+        if self.minimumHeight() != height:
+            self.setMinimumHeight(height)
+        self.setMaximumHeight(self._max_height)
+        self.flow.activate()
+        self.flow.setGeometry(self.container.rect())
+
+    def resizeEvent(self, event: object) -> None:  # type: ignore[override]
+        super().resizeEvent(event)  # type: ignore[misc]
+        self._relayout()
+

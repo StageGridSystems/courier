@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMessageBox,
+    QSizePolicy,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -59,8 +60,9 @@ class MainWindow(QMainWindow):
         central = QWidget()
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(10, 6, 10, 8)
+        layout.setSpacing(4)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         header = QHBoxLayout()
         brand_col = QVBoxLayout()
@@ -88,7 +90,9 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.compose_tab, "Compose / Send")
         self.tabs.addTab(self.settings_tab, "Settings")
         self.tabs.addTab(self.guide_tab, "How-to guide")
-        layout.addWidget(self.tabs)
+        self.tabs.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.tabs.setDocumentMode(True)
+        layout.addWidget(self.tabs, stretch=1)
 
         self.auth_tab.status_changed.connect(self._refresh_account_badge)
         self.audience_tab.changed.connect(self._autosave)

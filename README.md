@@ -21,7 +21,9 @@
 | --- | --- |
 | ![Compose](docs/screenshots/03-compose.png) | ![Settings](docs/screenshots/04-settings.png) |
 
-![How-to guide](docs/screenshots/05-guide.png)
+| How-to guide | Send confirmation |
+| --- | --- |
+| ![How-to guide](docs/screenshots/05-guide.png) | ![Send confirmation](docs/screenshots/06-send-confirm-modal.png) |
 
 ## Quick start
 

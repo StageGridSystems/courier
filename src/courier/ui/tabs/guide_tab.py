@@ -2,24 +2,29 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QScrollArea, QTextBrowser, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QLabel, QScrollArea, QSizePolicy, QTextBrowser, QVBoxLayout, QWidget
 
 from courier.branding import BRAND_NAME, PUBLISHER
 from courier.guide.content import GUIDE_SECTIONS
+from courier.ui.widgets.cards import make_card
 
 
 class GuideTab(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         container = QWidget()
         layout = QVBoxLayout(container)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(14)
+        layout.setContentsMargins(14, 8, 14, 10)
+        layout.setSpacing(10)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         title = QLabel(f"How to use {BRAND_NAME}")
         title.setObjectName("sectionTitle")
@@ -34,14 +39,15 @@ class GuideTab(QWidget):
         layout.addWidget(intro)
 
         for section in GUIDE_SECTIONS:
-            heading = QLabel(section.title)
-            heading.setStyleSheet("font-weight: 700; font-size: 15px;")
-            layout.addWidget(heading)
-            body = QTextBrowser()
-            body.setOpenExternalLinks(True)
-            body.setHtml(section.body_html)
-            body.setMinimumHeight(80)
-            layout.addWidget(body)
+            card, body = make_card(section.title)
+            body_view = QTextBrowser()
+            body_view.setOpenExternalLinks(True)
+            body_view.setHtml(section.body_html)
+            body_view.setMinimumHeight(72)
+            body_view.setMaximumHeight(220)
+            body_view.setStyleSheet("border: none; background: transparent;")
+            body.addWidget(body_view)
+            layout.addWidget(card)
 
         layout.addStretch(1)
         scroll.setWidget(container)

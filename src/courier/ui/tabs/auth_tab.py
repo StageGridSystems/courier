@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -48,9 +49,11 @@ class AuthTab(QWidget):
         self.auth = auth
         self._worker: _OAuthWorker | None = None
 
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(16)
+        root.setContentsMargins(14, 8, 14, 10)
+        root.setSpacing(10)
+        root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         title = QLabel("Authentication")
         title.setObjectName("sectionTitle")

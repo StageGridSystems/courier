@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -16,6 +16,8 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QTextEdit,
     QVBoxLayout,
@@ -27,6 +29,7 @@ from courier.exceptions import ConfigError
 from courier.storage.config import AppState
 from courier.storage.export_import import export_config, import_config_optional_auth
 from courier.storage.persistence import Persistence
+from courier.ui.widgets.cards import make_card
 from courier.ui.widgets.chip_field import ChipField
 
 
@@ -48,17 +51,30 @@ class SettingsTab(QWidget):
         self.persistence = persistence
         self.token_store = token_store
         s = state.settings
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        root = QVBoxLayout(self)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(12)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        container = QWidget()
+        root = QVBoxLayout(container)
+        root.setContentsMargins(14, 8, 14, 10)
+        root.setSpacing(10)
+        root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         title = QLabel("Settings / Prefs")
         title.setObjectName("sectionTitle")
         root.addWidget(title)
 
+        send_card, send_body = make_card(
+            "Sending",
+            subtitle="Conservative defaults protect Gmail accounts from quota hits.",
+        )
         form = QFormLayout()
-        self.test_audience = ChipField()
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        self.test_audience = ChipField(min_height=64, max_height=140)
         self.test_audience.set_emails(s.test_audience)
         form.addRow("Test audience (admins)", self.test_audience)
 
@@ -80,31 +96,38 @@ class SettingsTab(QWidget):
         )
         limits.setObjectName("mutedLabel")
         limits.setWordWrap(True)
+        limits.setStyleSheet("border: none;")
         form.addRow("", limits)
+        send_body.addLayout(form)
+        root.addWidget(send_card)
 
+        pref_card, pref_body = make_card("Preferences")
+        pref_form = QFormLayout()
+        pref_form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         self.footer_enabled = QCheckBox("Append default unsubscribe footer")
         self.footer_enabled.setChecked(s.default_footer_enabled)
-        form.addRow("Footer", self.footer_enabled)
+        pref_form.addRow("Footer", self.footer_enabled)
         self.footer_html = QTextEdit()
         self.footer_html.setPlainText(s.default_footer_html)
         self.footer_html.setMaximumHeight(90)
-        form.addRow("Footer HTML", self.footer_html)
+        pref_form.addRow("Footer HTML", self.footer_html)
 
         self.theme = QComboBox()
         self.theme.addItems(["dark", "light"])
         self.theme.setCurrentText(s.theme if s.theme in {"dark", "light"} else "dark")
-        form.addRow("Theme", self.theme)
+        pref_form.addRow("Theme", self.theme)
 
         self.confirm_destructive = QCheckBox("Confirm destructive actions")
         self.confirm_destructive.setChecked(s.confirm_destructive)
-        form.addRow("Dialogs", self.confirm_destructive)
+        pref_form.addRow("Dialogs", self.confirm_destructive)
         send_note = QLabel("Send confirmation cannot be disabled.")
         send_note.setObjectName("mutedLabel")
-        form.addRow("", send_note)
+        send_note.setStyleSheet("border: none;")
+        pref_form.addRow("", send_note)
 
         self.dry_run = QCheckBox("Dry-run mode (do not call Gmail API)")
         self.dry_run.setChecked(s.dry_run)
-        form.addRow("Safety", self.dry_run)
+        pref_form.addRow("Safety", self.dry_run)
 
         self.data_folder = QLineEdit(s.data_folder or str(self.persistence.data_dir))
         browse = QPushButton("Browse…")
@@ -112,31 +135,35 @@ class SettingsTab(QWidget):
         row = QHBoxLayout()
         row.addWidget(self.data_folder)
         row.addWidget(browse)
-        form.addRow("Data folder", row)
-
-        root.addLayout(form)
+        pref_form.addRow("Data folder", row)
+        pref_body.addLayout(pref_form)
 
         save = QPushButton("Save settings")
         save.setObjectName("primaryButton")
         save.clicked.connect(self._save)
-        root.addWidget(save)
+        pref_body.addWidget(save, alignment=Qt.AlignmentFlag.AlignLeft)
+        root.addWidget(pref_card)
 
-        root.addWidget(QLabel("Configuration backup"))
+        backup_card, backup_body = make_card(
+            "Configuration backup",
+            subtitle="Export audiences, drafts, templates, and settings as one file.",
+        )
         self.include_auth = QCheckBox(
             "Include auth (client secret + token). Requires a password and encrypts the payload."
         )
-        root.addWidget(self.include_auth)
+        backup_body.addWidget(self.include_auth)
         self.auth_password = QLineEdit()
         self.auth_password.setEchoMode(QLineEdit.EchoMode.Password)
         self.auth_password.setPlaceholderText("Password for encrypted auth (export/import)")
-        root.addWidget(self.auth_password)
+        backup_body.addWidget(self.auth_password)
         warn = QLabel(
             "Warning: an export with auth can send as your account if the password is known. "
             "Store it like a secret."
         )
         warn.setObjectName("mutedLabel")
         warn.setWordWrap(True)
-        root.addWidget(warn)
+        warn.setStyleSheet("border: none;")
+        backup_body.addWidget(warn)
 
         io_row = QHBoxLayout()
         export_btn = QPushButton("Export configuration…")
@@ -145,9 +172,13 @@ class SettingsTab(QWidget):
         import_btn.clicked.connect(self._import)
         io_row.addWidget(export_btn)
         io_row.addWidget(import_btn)
-        io_row.addStretch()
-        root.addLayout(io_row)
+        io_row.addStretch(1)
+        backup_body.addLayout(io_row)
+        root.addWidget(backup_card)
         root.addStretch(1)
+
+        scroll.setWidget(container)
+        outer.addWidget(scroll)
 
     def bind_state(self, state: AppState) -> None:
         self.state = state

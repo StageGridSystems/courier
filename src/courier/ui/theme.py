@@ -32,11 +32,17 @@ def stylesheet(theme: str) -> str:
         border-radius: 10px;
         background: {surface};
         top: -1px;
+        padding: 0;
+        margin: 0;
+    }}
+    QTabBar {{
+        qproperty-drawBase: 0;
+        background: transparent;
     }}
     QTabBar::tab {{
         background: transparent;
         color: {muted};
-        padding: 10px 18px;
+        padding: 8px 16px;
         margin-right: 4px;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
@@ -107,6 +113,43 @@ def stylesheet(theme: str) -> str:
         background: {surface};
         border: 1px solid {border};
         border-radius: 12px;
+    }}
+    QFrame#chipField {{
+        background: {bg};
+        border: 1px solid {border};
+        border-radius: 10px;
+    }}
+    QLabel#emptyState {{
+        color: {muted};
+        padding: 24px;
+        border: 1px dashed {border};
+        border-radius: 10px;
+        background: transparent;
+    }}
+    QTableWidget {{
+        background: {bg};
+        border: 1px solid {border};
+        border-radius: 8px;
+        gridline-color: {border};
+        alternate-background-color: {surface2};
+    }}
+    QTableWidget::item:selected {{
+        background: {primary};
+        color: white;
+    }}
+    QHeaderView::section {{
+        background: {surface2};
+        color: {muted};
+        padding: 8px;
+        border: none;
+        border-bottom: 1px solid {border};
+        font-weight: 600;
+    }}
+    QTabWidget {{
+        background: transparent;
+    }}
+    QTabWidget > QWidget {{
+        background: {surface};
     }}
     QFrame#statusOk {{
         background: rgba(13, 148, 136, 0.15);

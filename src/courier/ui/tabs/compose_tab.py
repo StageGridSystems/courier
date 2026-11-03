@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from PySide6.QtCore import QThread, Signal
+from PySide6.QtCore import Qt, QThread, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QSplitter,
     QTextEdit,
     QVBoxLayout,
@@ -51,14 +52,26 @@ class ConfirmSendDialog(QDialog):
     ) -> None:
         super().__init__(parent)
         self.setWindowTitle("Are you sure?")
-        self.setMinimumWidth(420)
+        self.setMinimumWidth(480)
+        self.setObjectName("confirmSendDialog")
         layout = QVBoxLayout(self)
-        layout.addWidget(QLabel(f"Recipients: <b>{count}</b>"))
-        layout.addWidget(QLabel(f"Subject: <b>{subject or '(empty)'}</b>"))
-        layout.addWidget(QLabel(f"Estimated time: <b>{estimate}</b>"))
-        layout.addWidget(
-            QLabel("Each person gets their own message. The list is never exposed in To/CC.")
+        layout.setContentsMargins(20, 18, 20, 18)
+        layout.setSpacing(12)
+
+        heading = QLabel("Send to audience?")
+        heading.setObjectName("sectionTitle")
+        layout.addWidget(heading)
+
+        summary = QLabel(
+            f"<p><b>Recipients:</b> {count}<br>"
+            f"<b>Subject:</b> {subject or '(empty)'}<br>"
+            f"<b>Estimated time:</b> {estimate}</p>"
+            "<p>Each person gets their own message. "
+            "The list is never exposed in To/CC.</p>"
         )
+        summary.setWordWrap(True)
+        layout.addWidget(summary)
+
         buttons = QDialogButtonBox()
         cancel = buttons.addButton("Cancel", QDialogButtonBox.ButtonRole.RejectRole)
         preview = buttons.addButton("Show preview first", QDialogButtonBox.ButtonRole.ActionRole)
@@ -66,6 +79,7 @@ class ConfirmSendDialog(QDialog):
             "Send to test audience first", QDialogButtonBox.ButtonRole.ActionRole
         )
         send_all = buttons.addButton("Send to all", QDialogButtonBox.ButtonRole.AcceptRole)
+        send_all.setObjectName("primaryButton")
         cancel.clicked.connect(lambda: self._pick("cancel"))
         preview.clicked.connect(lambda: self._pick("preview"))
         test.clicked.connect(lambda: self._pick("test"))
@@ -130,21 +144,33 @@ class ComposeTab(QWidget):
         self._queue: SendQueue | None = None
         self._results: list[SendResult] = []
         self._send_lock = False
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(10)
+        root.setContentsMargins(14, 8, 14, 10)
+        root.setSpacing(8)
+        root.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         title = QLabel("Compose / Send")
         title.setObjectName("sectionTitle")
         root.addWidget(title)
+        intro = QLabel(
+            "Write one message per recipient. Use {{email}} merge fields. "
+            "Send a test to admins before the full audience."
+        )
+        intro.setObjectName("mutedLabel")
+        intro.setWordWrap(True)
+        root.addWidget(intro)
 
         form = QFormLayout()
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
         self.subject = QLineEdit()
         self.from_name = QLineEdit()
         self.reply_to = QLineEdit()
-        self.cc_field = ChipField()
-        self.bcc_field = ChipField()
+        self.cc_field = ChipField(min_height=56, max_height=120)
+        self.bcc_field = ChipField(min_height=56, max_height=120)
+        self.cc_field.setMinimumWidth(360)
+        self.bcc_field.setMinimumWidth(360)
         form.addRow("Subject", self.subject)
         form.addRow("From display name", self.from_name)
         form.addRow("Reply-To", self.reply_to)
