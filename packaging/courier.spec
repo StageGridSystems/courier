@@ -15,11 +15,14 @@ a = Analysis(  # noqa: F821
     binaries=[],
     datas=[
         (str(src / "courier" / "resources"), "courier/resources"),
+        (str(src / "courier" / "composer" / "style_reference.html"), "courier/composer"),
     ],
     hiddenimports=[
         "keyring.backends",
         "keyring.backends.fail",
         "keyring.backends.null",
+        "PySide6.QtWebEngineWidgets",
+        "PySide6.QtWebEngineCore",
     ],
     hookspath=[],
     hooksconfig={},

@@ -228,8 +228,9 @@ class ComposeTab(QWidget):
         right_l = QVBoxLayout(right)
         right_l.setContentsMargins(0, 0, 0, 0)
         right_l.addWidget(QLabel("Live preview"))
-        self.preview = QTextEdit()
-        self.preview.setReadOnly(True)
+        from courier.ui.widgets.email_preview import EmailPreview
+
+        self.preview = EmailPreview()
         right_l.addWidget(self.preview)
         splitter.addWidget(right)
         root.addWidget(splitter, stretch=1)
