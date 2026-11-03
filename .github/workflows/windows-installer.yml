@@ -5,6 +5,14 @@ on:
   push:
     tags:
       - "v*"
+  # Path-filtered so packaging PRs can verify the installer without a matrix.
+  pull_request:
+    paths:
+      - "packaging/**"
+      - ".github/workflows/windows-installer.yml"
+      - "scripts/generate_app_icon.py"
+      - "scripts/build_windows.bat"
+      - "pyproject.toml"
 
 # Single job on windows-latest (no matrix) to keep CI minutes low.
 
