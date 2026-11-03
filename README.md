@@ -1,8 +1,8 @@
+<p align="center"><img src="src/courier/resources/icons/courier.svg" alt="Courier icon" width="96" height="96" /></p>
+
 # Courier
 
 **Courier** by **StageGrid Systems** sends email campaigns from *your own* Gmail or Google Workspace account through the Gmail API. One message per recipient. Your list never appears in To or CC.
-
-![Courier icon](src/courier/resources/icons/courier.svg)
 
 | | |
 | --- | --- |
