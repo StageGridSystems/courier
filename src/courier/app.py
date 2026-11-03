@@ -12,9 +12,21 @@ from PySide6.QtWidgets import QApplication, QMessageBox
 
 from courier.auth.oauth import AuthManager
 from courier.auth.token_store import TokenStore
-from courier.branding import BRAND_NAME
+from courier.branding import APP_ID, BRAND_NAME, PUBLISHER
 from courier.storage.persistence import Persistence
 from courier.ui.main_window import MainWindow
+
+
+def _set_windows_app_user_model_id() -> None:
+    """Stable AppUserModelID so taskbar pins group with the Start Menu shortcut."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
+    except (AttributeError, OSError):
+        pass
 
 
 def _configure_logging(log_path: object) -> None:
@@ -52,12 +64,17 @@ def _install_excepthook(log_path: object) -> None:
 
 
 def main() -> int:
+    _set_windows_app_user_model_id()
+    # Required before QApplication when QtWebEngine may load (live preview).
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts, True)
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
     app = QApplication(sys.argv)
     app.setApplicationName(BRAND_NAME)
-    app.setOrganizationName("StageGrid Systems")
+    app.setOrganizationName(PUBLISHER)
+    app.setApplicationDisplayName(BRAND_NAME)
+    app.setDesktopFileName(APP_ID)
     app.setStyle("Fusion")
 
     persistence = Persistence()

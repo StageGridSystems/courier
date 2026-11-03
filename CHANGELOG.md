@@ -6,6 +6,11 @@ All notable changes to Courier are documented in this file.
 
 ### Added
 
+- Windows Setup.exe via PyInstaller ONEDIR + Inno Setup, with Start Menu /
+  optional desktop shortcuts, Apps and Features registration, and a GitHub
+  Actions workflow that uploads `Courier-Setup-<version>.exe`.
+- Live compose preview via QtWebEngine (`EmailPreview`), with QTextBrowser
+  fallback that inlines remote images.
 - Initial Courier desktop app by StageGrid Systems (PySide6).
 - Authentication tab with Desktop OAuth client JSON (drag/drop or manual),
   `gmail.send` + userinfo email scopes, keyring / encrypted-file token storage.
