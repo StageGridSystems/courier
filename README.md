@@ -46,13 +46,22 @@ chmod +x run.sh
 ./run.sh
 ```
 
-### Windows
+### Windows (installer)
+
+1. Download `Courier-Setup-<version>.exe` from [Releases](https://github.com/StageGridSystems/courier/releases) (or the **Windows installer** workflow artifact under Actions).
+2. Run the setup (admin). It installs to `C:\Program Files\StageGrid-Systems\Courier`.
+3. Open **Courier** from the Start Menu. Right-click the Start Menu entry to pin it to Start or the taskbar.
+4. Optional: enable the desktop shortcut during setup.
+
+Config, tokens, and campaign data stay in your user profile (`%LOCALAPPDATA%\StageGrid Systems\Courier`) and survive upgrade and uninstall.
+
+### Windows (dev / from source)
 
 ```bat
 run.bat
 ```
 
-Both scripts create a virtualenv, install dependencies, and launch Courier.
+`run.bat` creates a virtualenv, installs dependencies, and launches Courier. Prefer the installer above for day-to-day use (no venv, fast cold start).
 
 ### Dev install
 
@@ -85,14 +94,14 @@ ruff check src tests
 ## Packaging
 
 ```bash
-# Linux
+# Linux binary (ONEDIR via PyInstaller)
 ./scripts/build_linux.sh
 
-# Windows
+# Windows ONEDIR app + (with Inno Setup) Courier-Setup-<version>.exe
 scripts\build_windows.bat
 ```
 
-Uses `packaging/courier.spec` (PyInstaller). Binaries are not committed.
+Uses `packaging/courier.spec` (PyInstaller ONEDIR) and `packaging/windows/courier.iss` (Inno Setup). Binaries and Setup.exe are not committed. CI builds the installer on `workflow_dispatch` and on tags `v*` (see `.github/workflows/windows-installer.yml`).
 
 ## Screenshots (regenerate)
 
