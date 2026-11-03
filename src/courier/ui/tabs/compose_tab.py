@@ -206,8 +206,21 @@ class ComposeTab(QWidget):
         self.auto_text.setChecked(True)
         self.auto_text.toggled.connect(self._on_html_changed)
         left_l.addWidget(self.auto_text)
-        left_l.addWidget(QLabel("Plain-text alternative"))
+        text_row = QHBoxLayout()
+        text_row.addWidget(QLabel("Plain-text alternative"))
+        text_row.addStretch(1)
+        self.ai_btn = QPushButton("Format with ChatGPT")
+        self.ai_btn.setToolTip(
+            "Opens chatgpt.com with a prompt that turns this plain text into an HTML email "
+            "in the SUDIC style. Paste ChatGPT's HTML back into the HTML body."
+        )
+        self.ai_btn.clicked.connect(self._format_with_chatgpt)
+        text_row.addWidget(self.ai_btn)
+        left_l.addLayout(text_row)
         self.text_edit = QPlainTextEdit()
+        self.text_edit.setPlaceholderText(
+            "Write or paste plain text here, then press \"Format with ChatGPT\" to get styled HTML."
+        )
         left_l.addWidget(self.text_edit)
         splitter.addWidget(left)
 
@@ -434,7 +447,25 @@ class ComposeTab(QWidget):
 
         recipients = self.state.audiences.effective_recipients()
         if not recipients:
-            QMessageBox.warning(self, "Audience", "No recipients after suppression.")
+            target = self.state.audiences.get(self.state.audiences.active_list)
+            if target is None or not target.emails:
+                msg = (
+                    f"The active audience list \"{self.state.audiences.active_list}\" is empty.\n\n"
+                    "Import a CSV/Excel file or add emails in the Audience tab. "
+                    "To try it out first, use \"Send test to admins\"."
+                )
+            else:
+                msg = "Every address in the active list is on the suppression list."
+            if settings.test_audience:
+                ans = QMessageBox.question(
+                    self, "Audience", msg + "\n\nSend to the test audience now instead?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if ans == QMessageBox.StandardButton.Yes:
+                    self._launch_queue(list(settings.test_audience), subject, html, text, job_label="test")
+            else:
+                QMessageBox.warning(self, "Audience", msg)
             return
         estimate = format_duration(
             estimate_send_seconds(len(recipients), settings.send_interval_seconds)
@@ -465,6 +496,31 @@ class ComposeTab(QWidget):
             return
         if dlg.choice == "all":
             self._launch_queue(recipients, subject, html, text, job_label="audience")
+
+    def _format_with_chatgpt(self) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices, QGuiApplication
+
+        from courier.composer.ai_format import build_prompt, chatgpt_url
+
+        text = self.text_edit.toPlainText().strip()
+        if not text:
+            QMessageBox.information(
+                self, "Format with ChatGPT", "Write or paste the email text in the plain-text box first."
+            )
+            return
+        QGuiApplication.clipboard().setText(build_prompt(text))
+        if self.auto_text.isChecked():
+            self.auto_text.setChecked(False)
+        QDesktopServices.openUrl(QUrl(chatgpt_url(text)))
+        QMessageBox.information(
+            self,
+            "Format with ChatGPT",
+            "ChatGPT is opening with the prompt filled in (it is also on your clipboard, "
+            "so you can paste it if the box is empty).\n\n"
+            "Send it, copy the HTML ChatGPT returns, and paste it into the HTML body here. "
+            "Then send a test to admins before the real send.",
+        )
 
     def _launch_queue(
         self,

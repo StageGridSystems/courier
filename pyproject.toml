@@ -39,7 +39,7 @@ courier = "courier.app:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-courier = ["resources/**/*", "guide/*.md"]
+courier = ["resources/**/*", "guide/*.md", "composer/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
