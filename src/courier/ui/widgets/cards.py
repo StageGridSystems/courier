@@ -20,13 +20,11 @@ def make_card(
     layout.setSpacing(10)
     heading = QLabel(title)
     heading.setObjectName("cardHeading")
-    heading.setStyleSheet("border: none; font-weight: 700; font-size: 14px;")
     layout.addWidget(heading)
     if subtitle:
         sub = QLabel(subtitle)
         sub.setObjectName("mutedLabel")
         sub.setWordWrap(True)
-        sub.setStyleSheet("border: none;")
         layout.addWidget(sub)
     return card, layout
 

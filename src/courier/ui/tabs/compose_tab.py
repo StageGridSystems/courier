@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 from uuid import uuid4
 
-from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtCore import Qt, QThread, QTimer, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
@@ -78,18 +78,33 @@ class ConfirmSendDialog(QDialog):
         test = buttons.addButton(
             "Send to test audience first", QDialogButtonBox.ButtonRole.ActionRole
         )
-        send_all = buttons.addButton("Send to all", QDialogButtonBox.ButtonRole.AcceptRole)
+        # ActionRole (not AcceptRole): Enter must not trigger send; only an explicit click.
+        send_all = buttons.addButton("Send to all", QDialogButtonBox.ButtonRole.ActionRole)
         send_all.setObjectName("primaryButton")
+        send_all.setAutoDefault(False)
+        send_all.setDefault(False)
+        for btn in (preview, test, send_all):
+            btn.setAutoDefault(False)
+            btn.setDefault(False)
+        cancel.setAutoDefault(True)
+        cancel.setDefault(True)
         cancel.clicked.connect(lambda: self._pick("cancel"))
         preview.clicked.connect(lambda: self._pick("preview"))
         test.clicked.connect(lambda: self._pick("test"))
         send_all.clicked.connect(lambda: self._pick("all"))
+        buttons.rejected.connect(lambda: self._pick("cancel"))
         layout.addWidget(buttons)
+        # Focus Cancel so Enter/Escape dismiss without sending.
+        QTimer.singleShot(0, cancel.setFocus)
+
+    def reject(self) -> None:  # noqa: D102
+        self.choice = "cancel"
+        super().reject()
 
     def _pick(self, choice: str) -> None:
         self.choice = choice
         if choice == "cancel":
-            self.reject()
+            super().reject()
         else:
             self.accept()
 

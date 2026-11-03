@@ -23,9 +23,25 @@ def stylesheet(theme: str) -> str:
         font-family: {FONT_UI};
         font-size: 13px;
     }}
-    QMainWindow, QDialog, QWidget {{
+    QMainWindow, QDialog {{
         background-color: {bg};
         color: {text};
+    }}
+    QLabel {{
+        background: transparent;
+        border: none;
+        color: {text};
+    }}
+    QFormLayout QLabel, QLabel#mutedLabel, QLabel#cardHeading, QLabel#sectionTitle {{
+        background: transparent;
+        border: none;
+    }}
+    QLabel#mutedLabel {{
+        color: {muted};
+    }}
+    QLabel#cardHeading {{
+        font-weight: 700;
+        font-size: 14px;
     }}
     QTabWidget::pane {{
         border: 1px solid {border};
@@ -101,18 +117,21 @@ def stylesheet(theme: str) -> str:
         font-size: 22px;
         font-weight: 700;
         color: {primary};
-    }}
-    QLabel#mutedLabel {{
-        color: {muted};
+        background: transparent;
     }}
     QLabel#sectionTitle {{
         font-size: 16px;
         font-weight: 700;
+        background: transparent;
     }}
     QFrame#card {{
         background: {surface};
         border: 1px solid {border};
         border-radius: 12px;
+    }}
+    QFrame#card QLabel {{
+        background: transparent;
+        border: none;
     }}
     QFrame#chipField {{
         background: {bg};
